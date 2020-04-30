@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -14,6 +15,7 @@ declare(strict_types=1);
  * @since     3.3.0
  * @license   https://opensource.org/licenses/mit-license.php MIT License
  */
+
 namespace App;
 
 use Cake\Core\Configure;
@@ -24,13 +26,19 @@ use Cake\Http\MiddlewareQueue;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\Routing\Middleware\RoutingMiddleware;
 
+use Authentication\AuthenticationService;
+use Authentication\AuthenticationServiceInterface;
+use Authentication\AuthenticationServiceProviderInterface;
+use Authentication\Middleware\AuthenticationMiddleware;
+use Psr\Http\Message\ServerRequestInterface;
+
 /**
  * Application setup class.
  *
  * This defines the bootstrapping logic and middleware layers you
  * want to use in your application.
  */
-class Application extends BaseApplication
+class Application extends BaseApplication implements AuthenticationServiceProviderInterface
 {
     /**
      * Load all the application configuration and bootstrap logic.
@@ -81,9 +89,46 @@ class Application extends BaseApplication
             // creating the middleware instance specify the cache config name by
             // using it's second constructor argument:
             // `new RoutingMiddleware($this, '_cake_routes_')`
-            ->add(new RoutingMiddleware($this));
+            ->add(new RoutingMiddleware($this))
+            ->add(new AuthenticationMiddleware($this)); // 追加
 
         return $middlewareQueue;
+    }
+
+    /**
+     * 認証機能の設定
+     *
+     * @param ServerRequestInterface $request
+     * @return AuthenticationServiceInterface
+     */
+    public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
+    {
+        // ログイン必須ページにアクセスしたときのリダイレクト先
+        $service = new AuthenticationService([
+            'unauthenticatedRedirect' => 'admin/users/login',
+            'queryParam' => 'redirect'
+        ]);
+
+        $fields = [
+            'username' => 'username',
+            'password' => 'password'
+        ];
+
+        // identifiers を読み込み、username と password のフィールドを確認します。
+        $service->loadIdentifier('Authentication.Password', [
+            'fields' => $fields
+        ]);
+
+        // authenticatorsをロードしたら、最初にセッションが必須です
+        $service->loadAuthenticator('Authentication.Session');
+
+        // 入力した username と password をチェックする為のフォームデータを設定します
+        $service->loadAuthenticator('Authentication.Form', [
+            'fields' => $fields,
+            'loginUrl' => '/admin/users/login'
+        ]);
+
+        return $service;
     }
 
     /**
