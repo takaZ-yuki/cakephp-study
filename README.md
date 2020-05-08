@@ -64,6 +64,12 @@ docker-compose exec app composer install
 
 ## migration
 
+### macの場合、権限の設定が必要
+
+```bash
+chmod 755 bin/cake
+```
+
 ```bash
 docker-compose exec app bin/cake migrations migrate
 ```
