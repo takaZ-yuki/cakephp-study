@@ -1,0 +1,52 @@
+version: '3.5'
+
+services:
+  web:
+    image: nginx:1.16-alpine
+    container_name: web
+    environment:
+      TZ: 'Asia/Tokyo'
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/local/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./web:/var/www/html
+
+  app:
+    build: ./docker/local/php-fpm
+    container_name: app
+    volumes:
+      - ./web:/var/www/html
+
+  mysql:
+#    image: mysql:latest
+    image: mysql:5.7
+    restart: always
+    container_name: mysql
+    environment:
+      MYSQL_DATABASE: cake_db
+      MYSQL_USER: cake_user
+      MYSQL_PASSWORD: cake_user123
+      MYSQL_ROOT_PASSWORD: password
+      TZ: 'Asia/Tokyo'
+    volumes:
+      - ./docker/local/mysql/etc-mysql.cnf:/etc/mysql/conf.d/etc-mysql.cnf
+      - ./db-data:/var/lib/mysql
+    ports:
+      - 3306:3306
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=mysql
+      - PMA_USER=root
+      - PMA_PASSWORD=password
+    links:
+      - mysql
+    ports:
+      - 8080:80
+    volumes:
+      - /sessions

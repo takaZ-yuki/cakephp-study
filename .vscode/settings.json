@@ -1,0 +1,13 @@
+{
+  "sqltools.connections": [
+    {
+      "database": "cake_db",
+      "dialect": "MySQL",
+      "name": "local_mysql",
+      "password": "cake_user123",
+      "port": 3306,
+      "server": "localhost",
+      "username": "cake_user"
+    }
+  ]
+}
